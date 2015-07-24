@@ -323,40 +323,45 @@ int main() {
   for (size_t i = 0; i < (1<<24) || test_values_double.size() % 256 != 0; i++)
     test_values_double.push_back(exp2(distrd(rnd)));
 
-  //test everything
+  //test reciprocal
 
   TEST_PRECISION   (recip_float4_ieee, recip_float4_ieee, float4);
   TEST_PERFORMANCE (recip_float4_ieee, float4);
-  TEST_PRECISION   (rsqrt_float4_ieee, rsqrt_float4_ieee, float4);
-  TEST_PERFORMANCE (rsqrt_float4_ieee, float4);
   TEST_PRECISION   (recip_float4_half, recip_float4_ieee, float4);
   TEST_PERFORMANCE (recip_float4_half, float4);
-  TEST_PRECISION   (rsqrt_float4_half, rsqrt_float4_ieee, float4);
-  TEST_PERFORMANCE (rsqrt_float4_half, float4);
   TEST_PRECISION   (recip_float4_single, recip_float4_ieee, float4);
   TEST_PERFORMANCE (recip_float4_single, float4);
-  TEST_PRECISION   (rsqrt_float4_single, rsqrt_float4_ieee, float4);
-  TEST_PERFORMANCE (rsqrt_float4_single, float4);
-  
+
   TEST_PRECISION   (recip_double2_ieee, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_ieee, double2);
-  TEST_PRECISION   (rsqrt_double2_ieee, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_ieee, double2);
   TEST_PRECISION   (recip_double2_half, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_half, double2);
-  TEST_PRECISION   (rsqrt_double2_half, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_half, double2);
   TEST_PRECISION   (recip_double2_single, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_single, double2);
-  TEST_PRECISION   (rsqrt_double2_single, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_single, double2);
   TEST_PRECISION   (recip_double2_double, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_double, double2);
-  TEST_PRECISION   (rsqrt_double2_double, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_double, double2);
 
   TEST_PRECISION   (recip_double2_full, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_full, double2);
+
+  //test reciprocal square root
+
+  TEST_PRECISION   (rsqrt_float4_ieee, rsqrt_float4_ieee, float4);
+  TEST_PERFORMANCE (rsqrt_float4_ieee, float4);
+  TEST_PRECISION   (rsqrt_float4_half, rsqrt_float4_ieee, float4);
+  TEST_PERFORMANCE (rsqrt_float4_half, float4);
+  TEST_PRECISION   (rsqrt_float4_single, rsqrt_float4_ieee, float4);
+  TEST_PERFORMANCE (rsqrt_float4_single, float4);
+  
+  TEST_PRECISION   (rsqrt_double2_ieee, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_ieee, double2);
+  TEST_PRECISION   (rsqrt_double2_half, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_half, double2);
+  TEST_PRECISION   (rsqrt_double2_single, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_single, double2);
+  TEST_PRECISION   (rsqrt_double2_double, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_double, double2);
+
 
   return 0;
 }
