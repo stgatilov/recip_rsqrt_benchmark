@@ -3,6 +3,7 @@
 #include <random>
 #include <cassert>
 #include <algorithm>
+#include <cfloat>
 #ifdef _MSC_VER
   #define noexcept
 #endif
