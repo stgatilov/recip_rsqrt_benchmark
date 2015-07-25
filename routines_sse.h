@@ -111,8 +111,8 @@ static FORCEINLINE __m128d recip_double2_r5(__m128d a) {
   __m128d x = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(a)));
   __m128d r = _mm_sub_pd(one, _mm_mul_pd(a, x));
   __m128d r2 = _mm_mul_pd(r, r);
-  __m128d r2r = _mm_add_pd(r2, r);      // h^2 + h
-  __m128d r21 = _mm_add_pd(r2, one);    // h^2 + 1
+  __m128d r2r = _mm_add_pd(r2, r);      // r^2 + r
+  __m128d r21 = _mm_add_pd(r2, one);    // r^2 + 1
   __m128d poly = _mm_mul_pd(r2r, r21);
   __m128d res = _mm_add_pd(_mm_mul_pd(poly, x), x);
   return res;
