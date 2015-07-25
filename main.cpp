@@ -22,155 +22,7 @@ typedef __m128d (*double2_func)(__m128d);
 
 //================ Implementations ===============
 
-static FORCEINLINE __m128 recip_float4_ieee(__m128 x) {
-  return _mm_div_ps(_mm_set1_ps(1.0f), x);
-}
-static FORCEINLINE __m128 rsqrt_float4_ieee(__m128 x) { 
-  return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(x));
-}
-static FORCEINLINE __m128 recip_float4_half(__m128 x) {
-  return _mm_rcp_ps(x);
-}
-static FORCEINLINE __m128 rsqrt_float4_half(__m128 x) {
-  return _mm_rsqrt_ps(x);
-}
-static FORCEINLINE __m128 recip_float4_single(__m128 x) {
-  //inspired by http://nume.googlecode.com/svn/trunk/fosh/src/sse_approx.h
-  __m128 res, muls;
-  res = _mm_rcp_ps(x);
-  muls = _mm_mul_ps(x, _mm_mul_ps(res, res));
-  res = _mm_sub_ps(_mm_add_ps(res, res), muls);
-  return res;
-}
-static FORCEINLINE __m128 rsqrt_float4_single(__m128 x) {
-  __m128 three = _mm_set1_ps(3.0f), half = _mm_set1_ps(0.5f);
-  //taken from http://stackoverflow.com/q/14752399/556899
-  __m128 res, muls;
-  res = _mm_rsqrt_ps(x); 
-  muls = _mm_mul_ps(_mm_mul_ps(x, res), res); 
-  res = _mm_mul_ps(_mm_mul_ps(half, res), _mm_sub_ps(three, muls)); 
-  return res;
-}
-
-static FORCEINLINE __m128d recip_double2_ieee(__m128d x) {
-  return _mm_div_pd(_mm_set1_pd(1.0), x);
-}
-static FORCEINLINE __m128d rsqrt_double2_ieee(__m128d x) { 
-  return _mm_div_pd(_mm_set1_pd(1.0), _mm_sqrt_pd(x));
-}
-static FORCEINLINE __m128d recip_double2_half(__m128d x) {
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rcp_ps(f);
-  return _mm_cvtps_pd(f);
-}
-static FORCEINLINE __m128d rsqrt_double2_half(__m128d x) { 
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rsqrt_ps(f);
-  return _mm_cvtps_pd(f);
-}
-static FORCEINLINE __m128d recip_double2_single(__m128d x) {
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rcp_ps(f);
-  __m128d res, muls;
-  res = _mm_cvtps_pd(f);
-  muls = _mm_mul_pd(x, _mm_mul_pd(res, res));
-  res = _mm_sub_pd(_mm_add_pd(res, res), muls);
-  return res;
-}
-static FORCEINLINE __m128d rsqrt_double2_single(__m128d x) { 
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rsqrt_ps(f);
-  __m128d res, muls;
-  __m128d three = _mm_set1_pd(3.0), half = _mm_set1_pd(0.5);
-  res = _mm_cvtps_pd(f);
-  muls = _mm_mul_pd(_mm_mul_pd(x, res), res);
-  res = _mm_mul_pd(_mm_mul_pd(half, res), _mm_sub_pd(three, muls)); 
-  return res;
-}
-static FORCEINLINE __m128d recip_double2_double(__m128d x) {
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rcp_ps(f);
-  __m128d res, muls;
-  res = _mm_cvtps_pd(f);
-  muls = _mm_mul_pd(x, _mm_mul_pd(res, res));
-  res = _mm_sub_pd(_mm_add_pd(res, res), muls);
-  muls = _mm_mul_pd(x, _mm_mul_pd(res, res));
-  res = _mm_sub_pd(_mm_add_pd(res, res), muls);
-  return res;
-}
-static FORCEINLINE __m128d rsqrt_double2_double(__m128d x) { 
-  __m128 f = _mm_cvtpd_ps(x);
-  f = _mm_rsqrt_ps(f);
-  __m128d res, muls;
-  __m128d three = _mm_set1_pd(3.0), half = _mm_set1_pd(0.5);
-  res = _mm_cvtps_pd(f);
-  muls = _mm_mul_pd(_mm_mul_pd(x, res), res);
-  res = _mm_mul_pd(_mm_mul_pd(half, res), _mm_sub_pd(three, muls)); 
-  muls = _mm_mul_pd(_mm_mul_pd(x, res), res);
-  res = _mm_mul_pd(_mm_mul_pd(half, res), _mm_sub_pd(three, muls)); 
-  return res;
-}
-
-
-static FORCEINLINE __m128d recip_double2_full(__m128d x) {
-  //taken from http://www.mersenneforum.org/showthread.php?t=11765
-/*struct DIVIDE
-{
-// compute y/x
-    const __m128d operator() ( __m128d y, __m128d x ) const
-    {
-        __m128d temp;
-        asm volatile(
-        "movaps     %[r0],%[r3]         \n"
-        "andps      %[pdnotexp],%[r0]   \n"// mantissa & sign
-        "orps       %[pd1],%[r0]        \n"// 1<=x<2
-        "andps      %[pdexp],%[r3]      \n"// exponent
-        "psubd      %[pdexpbias],%[r3]  \n"// normalize exponent
-        "movaps     %[r0],%[r1]         \n"// z
-        "cvtpd2ps   %[r0],%[r0]         \n"
-        "rcpps      %[r0],%[r0]         \n"// x (12-bit approx)
-        "cvtps2pd   %[r0],%[r0]         \n"
-        "mulpd      %[r0],%[r1]         \n"// z*x
-        "mulpd      %[y],%[r0]          \n"// y*x - more precision if done here!
-        "movaps     %[pd1],%[r2]        \n"
-        "subpd      %[r1],%[r2]         \n"// h=1-z*x
-        "movaps     %[r2],%[r1]         \n"// h
-        "mulpd      %[r2],%[r2]         \n"// h^2
-        "addpd      %[r2],%[r1]         \n"// h+h^2
-        "addpd      %[pd1],%[r2]        \n"// 1+h^2
-        "mulpd      %[r0],%[r1]         \n"// y*x*(h+h^2)
-        "mulpd      %[r1],%[r2]         \n"// y*x*(1+h^2)*(h+h^2)
-        "addpd      %[r2],%[r0]         \n"// y*x+y*x*(1+h^2)*(h+h^2)
-        "psubd      %[r3],%[r0]         \n"// -exponent
-        :
-        [r0]"+x"(x),
-        [r1]"=&x"(temp),
-        [r2]"=&x"(temp),
-        [r3]"=&x"(temp)
-        :
-        [y]"X"(y),
-        [pdexp]"X"(CONST::pdexp),
-        [pdnotexp]"X"(CONST::pdnotexp),
-        [pdexpbias]"X"(CONST::pdexpbias),
-        [pd1]"X"(CONST::pd1)
-        :
-        );
-        return x;
-    }
-};*/
-  __m128d one = _mm_set1_pd(1.0);       // 1
-  __m128d t = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)));    // t ~= 1 / x
-  __m128d tx = _mm_mul_pd(t, x);        // tx
-  __m128d h = _mm_sub_pd(one, tx);      // h = (1 - tx)
-  __m128d h2 = _mm_mul_pd(h, h);        // h^2
-  __m128d h2h = _mm_add_pd(h, h2);      // h^2 + h
-  __m128d h21 = _mm_add_pd(h2, one);    // h^2 + 1
-  __m128d h2h_t = _mm_mul_pd(h2h, t);   // t (h^2 + h)
-  __m128d omg = _mm_mul_pd(h21, h2h_t); // t (h^2 + h) (h^2 + 1)
-  __m128d wtf = _mm_add_pd(omg, t);     // t ((h^2 + h) (h^2 + 1) + 1)
-  return wtf;
-}
-
+#include "routines_sse.h"
 
 
 //================ Testing for correctness ===============
@@ -328,40 +180,40 @@ int main() {
 
   TEST_PRECISION   (recip_float4_ieee, recip_float4_ieee, float4);
   TEST_PERFORMANCE (recip_float4_ieee, float4);
-  TEST_PRECISION   (recip_float4_half, recip_float4_ieee, float4);
-  TEST_PERFORMANCE (recip_float4_half, float4);
-  TEST_PRECISION   (recip_float4_single, recip_float4_ieee, float4);
-  TEST_PERFORMANCE (recip_float4_single, float4);
+  TEST_PRECISION   (recip_float4_fast, recip_float4_ieee, float4);
+  TEST_PERFORMANCE (recip_float4_fast, float4);
+  TEST_PRECISION   (recip_float4_nr1, recip_float4_ieee, float4);
+  TEST_PERFORMANCE (recip_float4_nr1, float4);
 
   TEST_PRECISION   (recip_double2_ieee, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_ieee, double2);
-  TEST_PRECISION   (recip_double2_half, recip_double2_ieee, double2);
-  TEST_PERFORMANCE (recip_double2_half, double2);
-  TEST_PRECISION   (recip_double2_single, recip_double2_ieee, double2);
-  TEST_PERFORMANCE (recip_double2_single, double2);
-  TEST_PRECISION   (recip_double2_double, recip_double2_ieee, double2);
-  TEST_PERFORMANCE (recip_double2_double, double2);
+  TEST_PRECISION   (recip_double2_fast, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_fast, double2);
+  TEST_PRECISION   (recip_double2_nr1, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_nr1, double2);
+  TEST_PRECISION   (recip_double2_nr2, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_nr2, double2);
 
-  TEST_PRECISION   (recip_double2_full, recip_double2_ieee, double2);
-  TEST_PERFORMANCE (recip_double2_full, double2);
+  TEST_PRECISION   (recip_double2_r5, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_r5, double2);
 
   //test reciprocal square root
 
   TEST_PRECISION   (rsqrt_float4_ieee, rsqrt_float4_ieee, float4);
   TEST_PERFORMANCE (rsqrt_float4_ieee, float4);
-  TEST_PRECISION   (rsqrt_float4_half, rsqrt_float4_ieee, float4);
-  TEST_PERFORMANCE (rsqrt_float4_half, float4);
-  TEST_PRECISION   (rsqrt_float4_single, rsqrt_float4_ieee, float4);
-  TEST_PERFORMANCE (rsqrt_float4_single, float4);
+  TEST_PRECISION   (rsqrt_float4_fast, rsqrt_float4_ieee, float4);
+  TEST_PERFORMANCE (rsqrt_float4_fast, float4);
+  TEST_PRECISION   (rsqrt_float4_nr1, rsqrt_float4_ieee, float4);
+  TEST_PERFORMANCE (rsqrt_float4_nr1, float4);
   
   TEST_PRECISION   (rsqrt_double2_ieee, rsqrt_double2_ieee, double2);
   TEST_PERFORMANCE (rsqrt_double2_ieee, double2);
-  TEST_PRECISION   (rsqrt_double2_half, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_half, double2);
-  TEST_PRECISION   (rsqrt_double2_single, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_single, double2);
-  TEST_PRECISION   (rsqrt_double2_double, rsqrt_double2_ieee, double2);
-  TEST_PERFORMANCE (rsqrt_double2_double, double2);
+  TEST_PRECISION   (rsqrt_double2_fast, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_fast, double2);
+  TEST_PRECISION   (rsqrt_double2_nr1, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_nr1, double2);
+  TEST_PRECISION   (rsqrt_double2_nr2, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_nr2, double2);
 
 
   return 0;
