@@ -98,22 +98,22 @@ static FORCEINLINE __m128d rsqrt_double2_nr2(__m128d x) {
 }
 
 //relative correctors in form:
-//   h := 1 - a*x | 1 - a*x*x;
-//   x := x * poly(h);
+//   r := 1 - a*x | 1 - a*x*x;
+//   x := x * poly(r);
+//method's order is equal to degree of first removed monomial in series poly(r)
+//for reciprocal: poly(r) = 1 + r + r^2 + r^3 + r^4 + ...                   //a_k = 1
+//for rsqrt: poly(r) = 1 + 3/2 r + 15/8 r^2 + 105/48 r^3 + 945/384 r^4      //a_k = (2k+1)!! / (2^k k!)
 //see http://numbers.computation.free.fr/Constants/Algorithms/inverse.html
 
-
-static FORCEINLINE __m128d recip_double2_r5(__m128d x) {
-  //taken from http://www.mersenneforum.org/showthread.php?t=11765
-  __m128d one = _mm_set1_pd(1.0);       // 1
-  __m128d t = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)));    // t ~= 1 / x
-  __m128d tx = _mm_mul_pd(t, x);        // tx
-  __m128d h = _mm_sub_pd(one, tx);      // h = (1 - tx)
-  __m128d h2 = _mm_mul_pd(h, h);        // h^2
-  __m128d h2h = _mm_add_pd(h, h2);      // h^2 + h
-  __m128d h21 = _mm_add_pd(h2, one);    // h^2 + 1
-  __m128d h2h_t = _mm_mul_pd(h2h, t);   // t (h^2 + h)
-  __m128d omg = _mm_mul_pd(h21, h2h_t); // t (h^2 + h) (h^2 + 1)
-  __m128d wtf = _mm_add_pd(omg, t);     // t ((h^2 + h) (h^2 + 1) + 1)
-  return wtf;
+static FORCEINLINE __m128d recip_double2_r5(__m128d a) {
+  //inspired by http://www.mersenneforum.org/showthread.php?t=11765
+  __m128d one = _mm_set1_pd(1.0);
+  __m128d x = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(a, x));
+  __m128d r2 = _mm_mul_pd(r, r);
+  __m128d r2r = _mm_add_pd(r2, r);      // h^2 + h
+  __m128d r21 = _mm_add_pd(r2, one);    // h^2 + 1
+  __m128d poly = _mm_mul_pd(r2r, r21);
+  __m128d res = _mm_add_pd(_mm_mul_pd(poly, x), x);
+  return res;
 }
