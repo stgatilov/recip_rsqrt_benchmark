@@ -98,11 +98,11 @@ static FORCEINLINE __m128d rsqrt_double2_nr2(__m128d x) {
 }
 
 //relative correctors in form:
-//   r := 1 - a*x | 1 - a*x*x;
+//   r := 1 - a x | 1 - a x^2;
 //   x := x * poly(r);
 //method's order is equal to degree of first removed monomial in series poly(r)
-//for reciprocal: poly(r) = 1 + r + r^2 + r^3 + r^4 + ...                   //a_k = 1
-//for rsqrt: poly(r) = 1 + 3/2 r + 15/8 r^2 + 105/48 r^3 + 945/384 r^4      //a_k = (2k+1)!! / (2^k k!)
+//for reciprocal: poly(r) = 1 + r + r^2 + r^3 + r^4 + ...                     //a_k = 1
+//for rsqrt: poly(r) = 1 + 1/2 r + 3/8 r^2 + 15/48 r^3 + 105/384 r^4 + ...    //a_k = (2k-1)!! / (2^k k!)
 //see http://numbers.computation.free.fr/Constants/Algorithms/inverse.html
 
 static FORCEINLINE __m128d recip_double2_r5(__m128d a) {
@@ -136,5 +136,45 @@ static FORCEINLINE __m128d recip_double2_r3(__m128d a) {
   __m128d r = _mm_sub_pd(one, _mm_mul_pd(a, x));
   __m128d poly = _mm_add_pd(_mm_mul_pd(r, r), r);  // r^2 + r
   __m128d res = _mm_add_pd(_mm_mul_pd(poly, x), x);
+  return res;
+}
+
+static FORCEINLINE __m128d rsqrt_double2_r2(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0), c1_2 = _mm_set1_pd(1.0/2.0);
+  __m128d x = _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(_mm_mul_pd(a, x), x));
+  __m128d res = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(c1_2, x), r), x);
+  return res;
+}
+
+static FORCEINLINE __m128d rsqrt_double2_r3(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0), c1 = _mm_set1_pd(1.0/2.0), c2 = _mm_set1_pd(3.0/8.0);
+  __m128d x = _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(_mm_mul_pd(a, x), x));
+  __m128d t1 = _mm_add_pd(_mm_mul_pd(c2, r), c1);
+  __m128d res = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(r, x), t1), x);
+  return res;
+}
+
+static FORCEINLINE __m128d rsqrt_double2_r4(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0), c1 = _mm_set1_pd(1.0/2.0), c2 = _mm_set1_pd(3.0/8.0), c3 = _mm_set1_pd(15.0/48.0);
+  __m128d x = _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(_mm_mul_pd(a, x), x));
+  __m128d r2 = _mm_mul_pd(r, r);
+  __m128d t1 = _mm_add_pd(_mm_mul_pd(c2, r), c1);
+  __m128d poly = _mm_add_pd(_mm_mul_pd(r2, c3), t1);
+  __m128d res = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(x, r), poly), x);
+  return res;
+}
+
+static FORCEINLINE __m128d rsqrt_double2_r5(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0), c1 = _mm_set1_pd(1.0/2.0), c2 = _mm_set1_pd(3.0/8.0), c3 = _mm_set1_pd(15.0/48.0), c4 = _mm_set1_pd(105.0/384.0);
+  __m128d x = _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(_mm_mul_pd(a, x), x));
+  __m128d r2 = _mm_mul_pd(r, r);
+  __m128d t1 = _mm_add_pd(_mm_mul_pd(c2, r), c1);
+  __m128d t3 = _mm_add_pd(_mm_mul_pd(c4, r), c3);
+  __m128d poly = _mm_add_pd(_mm_mul_pd(r2, t3), t1);
+  __m128d res = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(x, r), poly), x);
   return res;
 }

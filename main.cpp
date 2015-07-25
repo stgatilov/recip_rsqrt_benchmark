@@ -219,6 +219,15 @@ int main() {
   TEST_PRECISION   (rsqrt_double2_nr2, rsqrt_double2_ieee, double2);
   TEST_PERFORMANCE (rsqrt_double2_nr2, double2);
 
+  TEST_PRECISION   (rsqrt_double2_r2, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_r2, double2);
+  TEST_PRECISION   (rsqrt_double2_r3, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_r3, double2);
+  TEST_PRECISION   (rsqrt_double2_r4, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_r4, double2);
+  TEST_PRECISION   (rsqrt_double2_r5, rsqrt_double2_ieee, double2);
+  TEST_PERFORMANCE (rsqrt_double2_r5, double2);
+
 
   return 0;
 }
