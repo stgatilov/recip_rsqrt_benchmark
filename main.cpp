@@ -194,6 +194,10 @@ int main() {
   TEST_PRECISION   (recip_double2_nr2, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_nr2, double2);
 
+  TEST_PRECISION   (recip_double2_r3, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_r3, double2);
+  TEST_PRECISION   (recip_double2_r4, recip_double2_ieee, double2);
+  TEST_PERFORMANCE (recip_double2_r4, double2);
   TEST_PRECISION   (recip_double2_r5, recip_double2_ieee, double2);
   TEST_PERFORMANCE (recip_double2_r5, double2);
 

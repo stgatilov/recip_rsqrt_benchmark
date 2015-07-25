@@ -117,3 +117,24 @@ static FORCEINLINE __m128d recip_double2_r5(__m128d a) {
   __m128d res = _mm_add_pd(_mm_mul_pd(poly, x), x);
   return res;
 }
+
+static FORCEINLINE __m128d recip_double2_r4(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0);
+  __m128d x = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(a, x));
+  __m128d r2 = _mm_mul_pd(r, r);
+  __m128d r1 = _mm_add_pd(r, one);      // r + 1
+  __m128d r21 = _mm_add_pd(r2, one);    // r^2 + 1
+  __m128d poly = _mm_mul_pd(r1, r21);
+  __m128d res = _mm_mul_pd(poly, x);
+  return res;
+}
+
+static FORCEINLINE __m128d recip_double2_r3(__m128d a) {
+  __m128d one = _mm_set1_pd(1.0);
+  __m128d x = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(a)));
+  __m128d r = _mm_sub_pd(one, _mm_mul_pd(a, x));
+  __m128d poly = _mm_add_pd(_mm_mul_pd(r, r), r);  // r^2 + r
+  __m128d res = _mm_add_pd(_mm_mul_pd(poly, x), x);
+  return res;
+}
