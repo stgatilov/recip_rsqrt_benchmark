@@ -1,4 +1,6 @@
 #include <xmmintrin.h>
+#include <emmintrin.h>
+#include <intrin.h>
 #include <vector>
 #include <random>
 #include <cassert>
